@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Gauge } from "@/components/Gauge";
 import { useGpsTrip, type GpsStatus } from "@/hooks/useGpsTrip";
-import { averageSpeed, formatDuration, MS_TO_KMH, MS_TO_MPH } from "@/lib/speed";
+import { formatDuration, MS_TO_KMH, MS_TO_MPH } from "@/lib/speed";
+import { KM_PER_MILE, mpgToKmPerLiter, mpgToLitersPer100Km, parseMpg } from "@/lib/fuel";
 
 const STATUS_TEXT: Record<GpsStatus, string> = {
   idle: "Ready",
@@ -23,6 +24,8 @@ export default function Home() {
   const shown = status === "live" || status === "weak" ? Math.round(kmh) : null;
   const mph = Math.round(trip.speed * MS_TO_MPH);
   const km = trip.distance / 1000;
+  const miles = km / KM_PER_MILE;
+  const fmt = (n: number) => (n < 10 ? n.toFixed(2) : n.toFixed(1));
 
   return (
     <main className={hud ? "app hud" : "app"}>
@@ -53,10 +56,9 @@ export default function Home() {
       </section>
 
       <section className="stats" aria-label="Trip">
-        <Stat label="Trip" value={km < 10 ? km.toFixed(2) : km.toFixed(1)} unit="km" />
-        <Stat label="Time" value={formatDuration(elapsedMs)} />
-        <Stat label="Avg" value={String(Math.round(averageSpeed(trip) * MS_TO_KMH))} unit="km/h" />
-        <Stat label="Max" value={String(Math.round(trip.maxSpeed * MS_TO_KMH))} unit="km/h" />
+        <Stat label="Trip" value={fmt(km)} unit="km" sub={`${fmt(miles)} mi`} />
+        <Stat label="Time" value={formatDuration(elapsedMs)} sub="h:mm:ss" />
+        <FuelCard />
       </section>
 
       {status === "denied" && (
@@ -94,7 +96,7 @@ export default function Home() {
   );
 }
 
-function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
+function Stat({ label, value, unit, sub }: { label: string; value: string; unit?: string; sub?: string }) {
   return (
     <div className="stat">
       <span className="stat-label">{label}</span>
@@ -102,6 +104,88 @@ function Stat({ label, value, unit }: { label: string; value: string; unit?: str
         {value}
         {unit && <small>{unit}</small>}
       </span>
+      {sub && <span className="stat-sub">{sub}</span>}
     </div>
+  );
+}
+
+const MPG_KEY = "kmh.mpg";
+
+/** Fuel economy: the driver types the MPG shown on the car's dashboard; we show km/L, MPG and L/100 km. */
+function FuelCard() {
+  const [mpg, setMpg] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = parseMpg(localStorage.getItem(MPG_KEY) ?? "");
+      if (saved !== null) setMpg(saved);
+    } catch {
+      /* storage unavailable: start empty */
+    }
+  }, []);
+
+  const open = () => {
+    setDraft(mpg === null ? "" : String(mpg));
+    setEditing(true);
+  };
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = parseMpg(draft);
+    setMpg(value);
+    try {
+      if (value === null) localStorage.removeItem(MPG_KEY);
+      else localStorage.setItem(MPG_KEY, String(value));
+    } catch {
+      /* not saved between visits, still shown now */
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <form className="stat stat-fuel stat-edit" onSubmit={save}>
+        <label className="stat-label" htmlFor="mpg-input">
+          Car MPG
+        </label>
+        <input
+          id="mpg-input"
+          className="mpg-input"
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="13.7"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          autoFocus
+        />
+        <button className="mpg-done" type="submit">
+          Done
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <button className="stat stat-fuel" onClick={open} aria-label="Enter the MPG shown on your car">
+      <span className="stat-label">Fuel ✎</span>
+      {mpg === null ? (
+        <>
+          <span className="stat-value stat-empty">Tap</span>
+          <span className="stat-sub">enter MPG</span>
+        </>
+      ) : (
+        <>
+          <span className="stat-value">
+            {mpgToKmPerLiter(mpg).toFixed(1)}
+            <small>km/L</small>
+          </span>
+          <span className="stat-sub">{mpg} MPG</span>
+          <span className="stat-sub">{mpgToLitersPer100Km(mpg).toFixed(1)} L/100 km</span>
+        </>
+      )}
+    </button>
   );
 }

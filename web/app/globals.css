@@ -76,7 +76,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .mph { margin-top: 10px; font-size: clamp(0.95rem, 3.6vmin, 1.2rem); color: var(--mute); font-variant-numeric: tabular-nums; }
 
 /* Trip stats */
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .stat {
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
   padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
@@ -84,6 +84,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--mute); }
 .stat-value { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stat-value small { font-size: 0.65rem; color: var(--mute); margin-left: 3px; font-weight: 600; }
+.stat-value { font-size: 1.45rem; }
+.stat-sub { font-size: 0.8rem; color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-empty { color: var(--green); }
+button.stat { font: inherit; color: inherit; cursor: pointer; }
+.stat-fuel { border-color: #1f3a30; }
+.stat-edit { gap: 6px; }
+.mpg-input {
+  width: 100%; min-width: 0; font: inherit; font-size: 1.3rem; font-weight: 700; text-align: center;
+  background: var(--bg); color: var(--ink); border: 1px solid var(--green); border-radius: 10px; padding: 6px 4px;
+}
+.mpg-input:focus { outline: none; box-shadow: 0 0 0 3px #35e0a133; }
+.mpg-done {
+  width: 100%; border: 0; border-radius: 10px; padding: 6px; font-weight: 800;
+  background: var(--green); color: #02140d;
+}
 
 /* Help */
 .help {
@@ -116,6 +131,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .topbar { grid-area: top; }
   .speed { grid-area: speed; }
   .stats { grid-area: stats; grid-template-columns: repeat(2, 1fr); align-content: center; }
+  .stat-fuel { grid-column: 1 / -1; }
   .help { grid-area: help; padding: 10px 12px; font-size: 0.8rem; }
   .controls { grid-area: controls; }
   .gauge { width: min(100%, 78dvh); }
