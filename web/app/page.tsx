@@ -6,7 +6,7 @@ import { useGpsTrip, type GpsStatus } from "@/hooks/useGpsTrip";
 import { useWeather } from "@/hooks/useWeather";
 import { WeatherPanel } from "@/components/WeatherPanel";
 import { describe, round } from "@/lib/weather";
-import { formatDuration, MS_TO_KMH, MS_TO_MPH } from "@/lib/speed";
+import { MS_TO_KMH, MS_TO_MPH } from "@/lib/speed";
 import { KM_PER_MILE, mpgToKmPerLiter, mpgToLitersPer100Km, parseMpg } from "@/lib/fuel";
 
 const STATUS_TEXT: Record<GpsStatus, string> = {
@@ -15,12 +15,12 @@ const STATUS_TEXT: Record<GpsStatus, string> = {
   live: "GPS",
   weak: "Weak GPS",
   lost: "GPS lost",
-  denied: "Location blocked",
+  denied: "No location",
   unsupported: "Not supported",
 };
 
 export default function Home() {
-  const { trip, status, accuracy, error, elapsedMs, running, start, stop, reset } = useGpsTrip();
+  const { trip, status, accuracy, error, start } = useGpsTrip();
   const [hud, setHud] = useState(false);
   const [weatherOpen, setWeatherOpen] = useState(false);
   const fix = useMemo(() => (trip.last ? { lat: trip.last.lat, lon: trip.last.lon } : null), [trip.last]);
@@ -56,7 +56,7 @@ export default function Home() {
               <span aria-hidden="true">{wxNow.icon}</span> {round(wx.weather.current.temp)}°C
             </>
           ) : (
-            <>☁️ Weather</>
+            <>☁️ --°C</>
           )}
         </button>
         <button
@@ -81,7 +81,6 @@ export default function Home() {
 
       <section className="stats" aria-label="Trip">
         <Stat label="Trip" value={fmt(km)} unit="km" sub={`${fmt(miles)} mi`} />
-        <Stat label="Time" value={formatDuration(elapsedMs)} sub="h:mm:ss" />
         <FuelCard />
       </section>
 
@@ -91,9 +90,12 @@ export default function Home() {
           <ol>
             <li>Settings → Privacy &amp; Security → Location Services → <b>Safari Websites</b> → While Using the App, Precise on.</li>
             <li>In Safari, tap ☰ in the address bar → Website Settings → Location → Allow.</li>
-            <li>Close this tab, open the page again, and tap Start.</li>
+            <li>Close the app, open it again, or tap Try again.</li>
           </ol>
           {error?.message && <small>Browser says: {error.message}</small>}
+          <button className="btn btn-start help-retry" onClick={start}>
+            Try again
+          </button>
         </section>
       )}
       {status === "unsupported" && (
@@ -102,20 +104,6 @@ export default function Home() {
         </section>
       )}
 
-      <footer className="controls">
-        {running ? (
-          <button className="btn btn-stop" onClick={stop}>
-            Stop
-          </button>
-        ) : (
-          <button className="btn btn-start" onClick={start}>
-            Start
-          </button>
-        )}
-        <button className="btn btn-ghost" onClick={reset} disabled={trip.distance === 0 && elapsedMs === 0}>
-          Reset trip
-        </button>
-      </footer>
     </main>
     {weatherOpen && (
       <WeatherPanel
@@ -213,11 +201,12 @@ function FuelCard() {
       ) : (
         <>
           <span className="stat-value">
-            {mpgToKmPerLiter(mpg).toFixed(1)}
-            <small>km/L</small>
+            {mpgToLitersPer100Km(mpg).toFixed(1)}
+            <small>L/100 km</small>
           </span>
-          <span className="stat-sub">{mpg} MPG</span>
-          <span className="stat-sub">{mpgToLitersPer100Km(mpg).toFixed(1)} L/100 km</span>
+          <span className="stat-sub">
+            {mpgToKmPerLiter(mpg).toFixed(1)} km/L · {mpg} MPG
+          </span>
         </>
       )}
     </button>

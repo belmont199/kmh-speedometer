@@ -23,7 +23,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .app {
   min-height: 100dvh;
   display: grid;
-  grid-template-rows: auto 1fr auto auto auto;
+  grid-template-rows: auto 1fr auto auto;
   gap: 14px;
   padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
     max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
@@ -34,27 +34,30 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .app.hud { transform: scaleY(-1); }
 
 /* Top bar */
-.topbar { display: flex; justify-content: space-between; align-items: center; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-top: 34px; }
+.topbar .pill, .topbar .chip { white-space: nowrap; }
+.topbar .pill { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.topbar .chip { flex: none; }
 .pill {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 12px; border-radius: 99px;
-  background: var(--panel); border: 1px solid var(--line);
-  font-size: 0.85rem; color: var(--mute); font-variant-numeric: tabular-nums;
+  padding: 11px 16px; border-radius: 99px;
+  background: #121a21; border: 1px solid #2a3742;
+  font-size: 1.05rem; font-weight: 600; color: #c4ced5; font-variant-numeric: tabular-nums;
 }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mute); }
 .pill-live .dot { background: var(--green); box-shadow: 0 0 10px var(--green); }
 .pill-live { color: var(--ink); }
 .pill-weak .dot, .pill-searching .dot { background: var(--amber); animation: blink 1.2s infinite; }
 .pill-lost .dot, .pill-denied .dot, .pill-unsupported .dot { background: var(--red); }
 @keyframes blink { 50% { opacity: 0.25; } }
 .chip {
-  padding: 7px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em;
-  background: var(--panel); border: 1px solid var(--line); color: var(--mute);
+  padding: 11px 18px; border-radius: 99px; font-size: 1rem; font-weight: 700; letter-spacing: 0.08em;
+  background: #121a21; border: 1px solid #2a3742; color: #c4ced5;
 }
 .chip-on { color: var(--bg); background: var(--green); border-color: var(--green); }
 .topbar { gap: 8px; }
 .topbar .pill { margin-right: auto; }
-.chip-wx { color: var(--ink); letter-spacing: 0; font-size: 0.95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chip-wx { color: var(--ink); letter-spacing: 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* Gauge */
 .speed { display: grid; place-items: center; min-height: 0; }
@@ -79,16 +82,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .mph { margin-top: 10px; font-size: clamp(0.95rem, 3.6vmin, 1.2rem); color: var(--mute); font-variant-numeric: tabular-nums; }
 
 /* Trip stats */
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .stat {
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
   padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
 }
 .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--mute); }
 .stat-value { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.stat-value small { font-size: 0.65rem; color: var(--mute); margin-left: 3px; font-weight: 600; }
-.stat-value { font-size: 1.45rem; }
-.stat-sub { font-size: 0.8rem; color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-value small { font-size: 0.8rem; color: var(--mute); margin-left: 3px; font-weight: 600; }
+.stat-value { font-size: 2.1rem; }
+.stat { padding: 14px 8px; }
+.stat-label { font-size: 0.8rem; }
+.stat-sub { font-size: 0.95rem; }
+.stat-sub { color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stat-empty { color: var(--green); }
 button.stat { font: inherit; color: inherit; cursor: pointer; }
 .stat-fuel { border-color: #1f3a30; }
@@ -128,13 +134,12 @@ button.stat { font: inherit; color: inherit; cursor: pointer; }
   .app {
     max-width: none;
     grid-template-columns: 1.3fr 1fr;
-    grid-template-rows: auto 1fr auto auto;
-    grid-template-areas: "top top" "speed stats" "speed help" "speed controls";
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "top top" "speed stats" "speed help";
   }
   .topbar { grid-area: top; }
   .speed { grid-area: speed; }
   .stats { grid-area: stats; grid-template-columns: repeat(2, 1fr); align-content: center; }
-  .stat-fuel { grid-column: 1 / -1; }
   .help { grid-area: help; padding: 10px 12px; font-size: 0.8rem; }
   .controls { grid-area: controls; }
   .gauge { width: min(100%, 78dvh); }
@@ -210,4 +215,10 @@ button.stat { font: inherit; color: inherit; cursor: pointer; }
   .wx-now-temp { font-size: 5rem; }
   .wx-metrics { grid-template-columns: repeat(2, 1fr); }
   .wx-credit { grid-column: 1 / -1; }
+}
+
+.help-retry { width: 100%; margin-top: 10px; padding: 14px; font-size: 1rem; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .topbar { margin-top: 4px; }
+  .stats { grid-template-columns: 1fr; }
 }

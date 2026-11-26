@@ -101,14 +101,37 @@ export function useGpsTrip() {
     return () => clearInterval(id);
   }, []);
 
-  // The wake lock is dropped when the page is hidden; take it again on return.
+  const statusRef = useRef<GpsStatus>("idle");
+  statusRef.current = status;
+
+  // Start by itself when the app opens.
+  useEffect(() => {
+    start();
+    // Some phones only keep the screen awake after a touch: take the wake lock again on the first tap.
+    const onFirstTouch = () => {
+      if (watchId.current !== null) requestWakeLock();
+    };
+    document.addEventListener("pointerdown", onFirstTouch, { once: true });
+    return () => document.removeEventListener("pointerdown", onFirstTouch);
+  }, [start, requestWakeLock]);
+
+  // Coming back to the app: keep the screen awake again, and restart GPS if it stopped while away.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible" && watchId.current !== null) requestWakeLock();
+      if (document.visibilityState !== "visible") return;
+      const s = statusRef.current;
+      if (s === "denied" || s === "unsupported") return;
+      if (watchId.current === null || s === "lost") {
+        if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+        start();
+      } else {
+        requestWakeLock();
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [requestWakeLock]);
+  }, [requestWakeLock, start]);
 
   useEffect(() => () => stop(), [stop]);
 
