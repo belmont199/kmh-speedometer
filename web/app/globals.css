@@ -156,13 +156,13 @@ button.stat { font: inherit; color: inherit; cursor: pointer; }
   animation: wx-in 0.2s ease-out;
 }
 @keyframes wx-in { from { opacity: 0; transform: translateY(12px); } }
-.wx-top { display: flex; align-items: center; gap: 10px; max-width: 760px; margin: 0 auto; }
+.wx-top { display: flex; align-items: center; gap: 10px; max-width: 760px; margin: 34px auto 0; }
 .wx-place { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.wx-place strong { font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wx-place span { font-size: 0.8rem; color: var(--mute); }
+.wx-place strong { font-size: 1.5rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wx-place span { font-size: 1rem; font-weight: 600; color: #c4ced5; margin-top: 2px; }
 .wx-icon-btn {
-  width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line);
-  background: var(--panel); font-size: 1.3rem; flex: none;
+  width: 56px; height: 56px; border-radius: 50%; border: 1px solid #2a3742;
+  background: #121a21; color: var(--ink); font-size: 1.5rem; font-weight: 700; flex: none;
 }
 .wx-icon-btn:disabled { opacity: 0.4; }
 .wx-error, .wx-empty { text-align: center; color: var(--mute); margin: 40px auto; max-width: 420px; }
@@ -211,7 +211,7 @@ button.stat { font: inherit; color: inherit; cursor: pointer; }
 .wx-col { display: grid; gap: 14px; min-width: 0; }
 @media (orientation: landscape) and (max-height: 560px) {
   .wx-body { grid-template-columns: 1fr 1.2fr; align-items: start; max-width: none; }
-  .wx-top { max-width: none; }
+  .wx-top { max-width: none; margin-top: 4px; }
   .wx-now { padding-top: 0; }
   .wx-now-icon { font-size: 2.6rem; }
   .wx-now-temp { font-size: 5rem; }

@@ -1,4 +1,4 @@
-:HL["/kmh-speedometer/_next/static/chunks/19e3mr0js_lii.css","style"]
+:HL["/kmh-speedometer/_next/static/chunks/1my5ubb75483y.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"dmGU9IYTJzrTDboxfDvCe","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"-q8_VUQJlUfhD8I808EUy","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
