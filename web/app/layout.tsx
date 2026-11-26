@@ -5,8 +5,9 @@ export const metadata: Metadata = {
   title: "km/h Speedometer",
   description: "GPS speedometer in km/h for cars that only show mph.",
   manifest: "/kmh-speedometer/manifest.webmanifest",
-  icons: { icon: "/kmh-speedometer/icon.svg", apple: "/kmh-speedometer/icon.svg" },
+  icons: { icon: "/kmh-speedometer/icon.svg", apple: "/kmh-speedometer/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "km/h", statusBarStyle: "black-translucent" },
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = {
