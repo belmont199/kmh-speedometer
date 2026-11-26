@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Gauge } from "@/components/Gauge";
 import { useGpsTrip, type GpsStatus } from "@/hooks/useGpsTrip";
+import { useWeather } from "@/hooks/useWeather";
+import { WeatherPanel } from "@/components/WeatherPanel";
+import { describe, round } from "@/lib/weather";
 import { formatDuration, MS_TO_KMH, MS_TO_MPH } from "@/lib/speed";
 import { KM_PER_MILE, mpgToKmPerLiter, mpgToLitersPer100Km, parseMpg } from "@/lib/fuel";
 
@@ -19,6 +22,10 @@ const STATUS_TEXT: Record<GpsStatus, string> = {
 export default function Home() {
   const { trip, status, accuracy, error, elapsedMs, running, start, stop, reset } = useGpsTrip();
   const [hud, setHud] = useState(false);
+  const [weatherOpen, setWeatherOpen] = useState(false);
+  const fix = useMemo(() => (trip.last ? { lat: trip.last.lat, lon: trip.last.lon } : null), [trip.last]);
+  const wx = useWeather(fix);
+  const wxNow = wx.weather ? describe(wx.weather.current.code, wx.weather.current.isDay) : null;
 
   const kmh = trip.speed * MS_TO_KMH;
   const shown = status === "live" || status === "weak" ? Math.round(kmh) : null;
@@ -28,6 +35,7 @@ export default function Home() {
   const fmt = (n: number) => (n < 10 ? n.toFixed(2) : n.toFixed(1));
 
   return (
+    <>
     <main className={hud ? "app hud" : "app"}>
       <header className="topbar">
         <span className={`pill pill-${status}`}>
@@ -35,6 +43,22 @@ export default function Home() {
           {STATUS_TEXT[status]}
           {accuracy !== null && (status === "live" || status === "weak") && ` ±${Math.round(accuracy)} m`}
         </span>
+        <button
+          className="chip chip-wx"
+          onClick={() => {
+            setWeatherOpen(true);
+            wx.refresh();
+          }}
+          aria-label="Open weather"
+        >
+          {wxNow && wx.weather ? (
+            <>
+              <span aria-hidden="true">{wxNow.icon}</span> {round(wx.weather.current.temp)}°C
+            </>
+          ) : (
+            <>☁️ Weather</>
+          )}
+        </button>
         <button
           className={hud ? "chip chip-on" : "chip"}
           onClick={() => setHud((h) => !h)}
@@ -93,6 +117,16 @@ export default function Home() {
         </button>
       </footer>
     </main>
+    {weatherOpen && (
+      <WeatherPanel
+        weather={wx.weather}
+        loading={wx.loading}
+        error={wx.error}
+        onRefresh={() => wx.refresh(true)}
+        onClose={() => setWeatherOpen(false)}
+      />
+    )}
+    </>
   );
 }
 
