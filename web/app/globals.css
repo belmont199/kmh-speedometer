@@ -78,6 +78,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   letter-spacing: -0.04em; font-variant-numeric: tabular-nums;
 }
 .digits-empty { color: #34414b; }
+.digits-dim { opacity: 0.45; }
+.approx { margin-top: 6px; font-size: 0.85rem; font-weight: 700; color: var(--amber); }
 .unit { font-size: clamp(1rem, 4.5vmin, 1.5rem); font-weight: 700; color: var(--green); letter-spacing: 0.06em; margin-top: 4px; }
 .mph { margin-top: 10px; font-size: clamp(0.95rem, 3.6vmin, 1.2rem); color: var(--mute); font-variant-numeric: tabular-nums; }
 

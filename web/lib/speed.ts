@@ -24,14 +24,20 @@ export interface TripState {
   /** Time spent moving, in ms. */
   movingMs: number;
   last: Fix | null;
+  /** How much to trust the current speed: good = device speed with a tight fix. */
+  quality: Quality;
 }
 
-export const emptyTrip: TripState = { speed: 0, maxSpeed: 0, distance: 0, movingMs: 0, last: null };
+export type Quality = "good" | "fair" | "poor";
+
+export const emptyTrip: TripState = { speed: 0, maxSpeed: 0, distance: 0, movingMs: 0, last: null, quality: "poor" };
 
 /** Below this speed (m/s, about 2 km/h) the car is treated as standing still, which hides GPS jitter. */
 export const STANDSTILL = 0.55;
 /** Fixes less accurate than this (m) are not used for distance. */
 export const MAX_ACCURACY = 35;
+/** A fix this accurate (m) with a device speed is shown as-is, without smoothing. */
+export const GOOD_ACCURACY = 20;
 /** Gaps longer than this (ms) are not bridged, e.g. after a tunnel. */
 export const MAX_GAP_MS = 15000;
 
@@ -64,7 +70,12 @@ export function addFix(state: TripState, fix: Fix): TripState {
   else raw = 0;
 
   // Light smoothing: responsive, but steadier digits.
-  const smoothed = prev ? state.speed * 0.35 + raw * 0.65 : raw;
+  // The phone's own speed (Doppler) is already filtered, so a good one is shown as-is: smoothing would only add lag.
+  // Weaker readings get some smoothing to steady them.
+  const quality: Quality =
+    hasDeviceSpeed && fix.accuracy <= GOOD_ACCURACY ? "good" : hasDeviceSpeed && fix.accuracy <= MAX_ACCURACY ? "fair" : "poor";
+  const keep = quality === "good" ? 0 : quality === "fair" ? 0.3 : 0.5;
+  const smoothed = prev ? state.speed * keep + raw * (1 - keep) : raw;
   const speed = smoothed < STANDSTILL ? 0 : smoothed;
 
   const moving = raw >= STANDSTILL;
@@ -77,6 +88,7 @@ export function addFix(state: TripState, fix: Fix): TripState {
     distance: state.distance + (countIt ? step : 0),
     movingMs: state.movingMs + (countIt ? dt : 0),
     last: accurate || !prev ? fix : prev,
+    quality,
   };
 }
 

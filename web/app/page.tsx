@@ -20,7 +20,7 @@ const STATUS_TEXT: Record<GpsStatus, string> = {
 };
 
 export default function Home() {
-  const { trip, status, accuracy, error, start } = useGpsTrip();
+  const { trip, status, accuracy, error, stale, start } = useGpsTrip();
   const [hud, setHud] = useState(false);
   const [weatherOpen, setWeatherOpen] = useState(false);
   const fix = useMemo(() => (trip.last ? { lat: trip.last.lat, lon: trip.last.lon } : null), [trip.last]);
@@ -30,6 +30,8 @@ export default function Home() {
   const kmh = trip.speed * MS_TO_KMH;
   const shown = status === "live" || status === "weak" ? Math.round(kmh) : null;
   const mph = Math.round(trip.speed * MS_TO_MPH);
+  // Dim the number when it can't be fully trusted: weak fix, no fresh reading, or speed worked out from positions.
+  const trusted = shown !== null && !stale && trip.quality !== "poor" && status === "live";
   const km = trip.distance / 1000;
   const miles = km / KM_PER_MILE;
   const fmt = (n: number) => (n < 10 ? n.toFixed(2) : n.toFixed(1));
@@ -71,11 +73,17 @@ export default function Home() {
 
       <section className="speed">
         <Gauge kmh={shown ?? 0}>
-          <div className={shown === null ? "digits digits-empty" : "digits"} aria-live="polite">
+          <div
+            className={shown === null ? "digits digits-empty" : trusted ? "digits" : "digits digits-dim"}
+            aria-live="polite"
+          >
             {shown ?? "--"}
           </div>
           <div className="unit">km/h</div>
           <div className="mph">{shown === null ? "— mph" : `${mph} mph`}</div>
+          {shown !== null && !trusted && (
+            <div className="approx">{stale ? "Waiting for GPS…" : "Low accuracy"}</div>
+          )}
         </Gauge>
       </section>
 

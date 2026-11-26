@@ -39,7 +39,8 @@ test("standing still with GPS jitter adds no distance and shows 0", () => {
 test("falls back to distance/time when the device gives no speed", () => {
   let s = addFix(emptyTrip, { lat: 41.7, lon: 44.8, speed: null, accuracy: 5, time: 0 });
   s = addFix(s, { lat: 41.7 + 10 / 111195, lon: 44.8, speed: null, accuracy: 5, time: 1000 });
-  assert.equal(Math.round(s.speed * 0.65 ** -1 * MS_TO_KMH), 36); // raw 10 m/s = 36 km/h, before smoothing
+  assert.equal(Math.round(s.speed * 2 * MS_TO_KMH), 36); // raw 10 m/s = 36 km/h, half-smoothed from 0
+  assert.equal(s.quality, "poor");
 });
 
 test("inaccurate fixes and long gaps are not counted", () => {
@@ -55,6 +56,16 @@ test("close fixes without device speed are skipped, not spiked", () => {
   s = addFix(s, { lat: 41.7 + 20 / 111195, lon: 44.8, speed: null, accuracy: 5, time: 1000 });
   s = addFix(s, { lat: 41.7 + 40 / 111195, lon: 44.8, speed: null, accuracy: 5, time: 1100 });
   assert.ok(s.maxSpeed * MS_TO_KMH < 80, String(s.maxSpeed * MS_TO_KMH));
+});
+
+test("a good device speed is shown immediately, without lag", () => {
+  let s = addFix(emptyTrip, { lat: 41.7, lon: 44.8, speed: 10, accuracy: 5, time: 0 });
+  s = addFix(s, { lat: 41.7 + 20 / 111195, lon: 44.8, speed: 20, accuracy: 5, time: 1000 });
+  assert.equal(Math.round(s.speed * MS_TO_KMH), 72);
+  assert.equal(s.quality, "good");
+  s = addFix(s, { lat: 41.7 + 40 / 111195, lon: 44.8, speed: 10, accuracy: 30, time: 2000 });
+  assert.equal(s.quality, "fair");
+  assert.equal(Math.round(s.speed * MS_TO_KMH), Math.round((20 * 0.3 + 10 * 0.7) * 3.6));
 });
 
 test("duration format", () => {

@@ -1,3 +1,3 @@
-:HL["/kmh-speedometer/_next/static/chunks/3dl4ztawrgxw2.css","style"]
+:HL["/kmh-speedometer/_next/static/chunks/19e3mr0js_lii.css","style"]
 1:[["children",{"s":"__PAGE__","h":160}]]
-0:{"b":"q6yTwVdyjWTrMUJNAOSiL","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"dmGU9IYTJzrTDboxfDvCe","t":{"t":{"s":"","h":80,"c":"$Q1"}}}

@@ -11,6 +11,7 @@ export interface GpsError {
 }
 
 const LOST_AFTER_MS = 10000;
+const STALE_AFTER_MS = 4000;
 
 export function useGpsTrip() {
   const [trip, setTrip] = useState<TripState>(emptyTrip);
@@ -18,6 +19,8 @@ export function useGpsTrip() {
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState<GpsError | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [stale, setStale] = useState(false);
+  const staleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const watchId = useRef<number | null>(null);
   const lostTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +60,9 @@ export function useGpsTrip() {
 
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (staleTimer.current) clearTimeout(staleTimer.current);
+        setStale(false);
+        staleTimer.current = setTimeout(() => setStale(true), STALE_AFTER_MS);
         if (lostTimer.current) clearTimeout(lostTimer.current);
         lostTimer.current = setTimeout(() => {
           setStatus("lost");
@@ -136,5 +142,5 @@ export function useGpsTrip() {
   useEffect(() => () => stop(), [stop]);
 
   const running = status !== "idle" && status !== "denied" && status !== "unsupported";
-  return { trip, status, accuracy, error, elapsedMs, running, start, stop, reset };
+  return { trip, status, accuracy, error, elapsedMs, running, stale, start, stop, reset };
 }
