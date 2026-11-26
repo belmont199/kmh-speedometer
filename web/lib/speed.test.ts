@@ -39,7 +39,9 @@ test("standing still with GPS jitter adds no distance and shows 0", () => {
 test("falls back to distance/time when the device gives no speed", () => {
   let s = addFix(emptyTrip, { lat: 41.7, lon: 44.8, speed: null, accuracy: 5, time: 0 });
   s = addFix(s, { lat: 41.7 + 10 / 111195, lon: 44.8, speed: null, accuracy: 5, time: 1000 });
-  assert.equal(Math.round(s.speed * 2 * MS_TO_KMH), 36); // raw 10 m/s = 36 km/h, half-smoothed from 0
+  assert.equal(s.speed, 0); // first "moving" reading from standstill is held back
+  s = addFix(s, { lat: 41.7 + 20 / 111195, lon: 44.8, speed: null, accuracy: 5, time: 2000 });
+  assert.equal(Math.round(s.speed * MS_TO_KMH), 36); // 10 m/s = 36 km/h
   assert.equal(s.quality, "poor");
 });
 
@@ -60,12 +62,40 @@ test("close fixes without device speed are skipped, not spiked", () => {
 
 test("a good device speed is shown immediately, without lag", () => {
   let s = addFix(emptyTrip, { lat: 41.7, lon: 44.8, speed: 10, accuracy: 5, time: 0 });
-  s = addFix(s, { lat: 41.7 + 20 / 111195, lon: 44.8, speed: 20, accuracy: 5, time: 1000 });
-  assert.equal(Math.round(s.speed * MS_TO_KMH), 72);
+  s = addFix(s, { lat: 41.7 + 10 / 111195, lon: 44.8, speed: 10, accuracy: 5, time: 1000 });
+  s = addFix(s, { lat: 41.7 + 20 / 111195, lon: 44.8, speed: 10, accuracy: 5, time: 2000 });
+  assert.equal(Math.round(s.speed * MS_TO_KMH), 36);
+  s = addFix(s, { lat: 41.7 + 40 / 111195, lon: 44.8, speed: 20, accuracy: 5, time: 3000 });
+  assert.equal(Math.round(s.speed * MS_TO_KMH), 72); // jumps straight to the new speed
   assert.equal(s.quality, "good");
-  s = addFix(s, { lat: 41.7 + 40 / 111195, lon: 44.8, speed: 10, accuracy: 30, time: 2000 });
+  s = addFix(s, { lat: 41.7 + 50 / 111195, lon: 44.8, speed: 10, accuracy: 30, time: 4000 });
   assert.equal(s.quality, "fair");
   assert.equal(Math.round(s.speed * MS_TO_KMH), Math.round((20 * 0.3 + 10 * 0.7) * 3.6));
+});
+
+test("parked: a phone reporting 20 km/h while the position barely moves shows 0", () => {
+  let s = emptyTrip;
+  for (let i = 0; i < 10; i++) {
+    const jitter = (i % 3) * 2 / 111195; // a few meters of drift
+    s = addFix(s, { lat: 41.7 + jitter, lon: 44.8, speed: 5.6, accuracy: 7, time: i * 1000 });
+  }
+  assert.equal(s.speed, 0);
+  assert.equal(s.distance < 20, true);
+});
+
+test("a single spike from standstill is ignored", () => {
+  let s = addFix(emptyTrip, { lat: 41.7, lon: 44.8, speed: 0, accuracy: 5, time: 0 });
+  s = addFix(s, { lat: 41.7, lon: 44.8, speed: 6, accuracy: 5, time: 1000 });
+  assert.equal(s.speed, 0);
+  s = addFix(s, { lat: 41.7, lon: 44.8, speed: 0, accuracy: 5, time: 2000 });
+  assert.equal(s.speed, 0);
+});
+
+test("slow real driving (10 km/h) is still shown", () => {
+  const v = 10 / 3.6;
+  let s = emptyTrip;
+  for (let i = 0; i <= 8; i++) s = addFix(s, { lat: 41.7 + (i * v) / 111195, lon: 44.8, speed: v, accuracy: 7, time: i * 1000 });
+  assert.equal(Math.round(s.speed * MS_TO_KMH), 10);
 });
 
 test("duration format", () => {

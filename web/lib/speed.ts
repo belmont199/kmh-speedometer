@@ -26,11 +26,15 @@ export interface TripState {
   last: Fix | null;
   /** How much to trust the current speed: good = device speed with a tight fix. */
   quality: Quality;
+  /** Fixes from the last few seconds, to check the reported speed against real movement. */
+  recent: Fix[];
+  /** One reading said "moving" while we showed 0; wait for a second one before believing it. */
+  pendingMove: boolean;
 }
 
 export type Quality = "good" | "fair" | "poor";
 
-export const emptyTrip: TripState = { speed: 0, maxSpeed: 0, distance: 0, movingMs: 0, last: null, quality: "poor" };
+export const emptyTrip: TripState = { speed: 0, maxSpeed: 0, distance: 0, movingMs: 0, last: null, quality: "poor", recent: [], pendingMove: false };
 
 /** Below this speed (m/s, about 2 km/h) the car is treated as standing still, which hides GPS jitter. */
 export const STANDSTILL = 0.55;
@@ -40,6 +44,8 @@ export const MAX_ACCURACY = 35;
 export const GOOD_ACCURACY = 20;
 /** Gaps longer than this (ms) are not bridged, e.g. after a tunnel. */
 export const MAX_GAP_MS = 15000;
+/** How far back (ms) we look to check that the car really moved. */
+export const CHECK_WINDOW_MS = 5000;
 
 export function haversineMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
   const R = 6371008.8;
@@ -69,16 +75,40 @@ export function addFix(state: TripState, fix: Fix): TripState {
   else if (usableGap) raw = step / (dt / 1000);
   else raw = 0;
 
-  // Light smoothing: responsive, but steadier digits.
+  // Reality check: phones (indoors, near buildings) sometimes report a speed while standing still.
+  // If over the last few seconds the car moved far less than that speed implies, it isn't moving.
+  const recent = [...state.recent, fix].filter((f) => fix.time - f.time <= CHECK_WINDOW_MS && f.accuracy <= MAX_ACCURACY);
+  const oldest = recent[0];
+  const span = oldest ? (fix.time - oldest.time) / 1000 : 0;
+  if (raw >= STANDSTILL && oldest && span >= 3) {
+    const moved = haversineMeters(oldest, fix);
+    const expected = raw * span;
+    const noise = Math.max(12, 2 * Math.max(oldest.accuracy, fix.accuracy));
+    if (moved < 0.4 * expected && moved < noise) raw = moved / span < STANDSTILL ? 0 : moved / span;
+  }
+
+  // From standstill, start only when two readings in a row each show the position really moving
+  // by about the reported speed. A phone glitch while parked fails this.
+  let pendingMove = false;
+  let distanceSpeed = raw; // used to decide whether this step counts toward the trip
+  if (state.speed === 0 && raw >= STANDSTILL) {
+    const consistent = prev !== null && dt > 0 && step >= 0.5 * raw * (dt / 1000);
+    if (!consistent) raw = distanceSpeed = 0;
+    else if (!state.pendingMove) {
+      pendingMove = true;
+      raw = 0;
+    }
+  }
+
   // The phone's own speed (Doppler) is already filtered, so a good one is shown as-is: smoothing would only add lag.
   // Weaker readings get some smoothing to steady them.
   const quality: Quality =
     hasDeviceSpeed && fix.accuracy <= GOOD_ACCURACY ? "good" : hasDeviceSpeed && fix.accuracy <= MAX_ACCURACY ? "fair" : "poor";
   const keep = quality === "good" ? 0 : quality === "fair" ? 0.3 : 0.5;
-  const smoothed = prev ? state.speed * keep + raw * (1 - keep) : raw;
+  const smoothed = prev && state.speed > 0 ? state.speed * keep + raw * (1 - keep) : raw;
   const speed = smoothed < STANDSTILL ? 0 : smoothed;
 
-  const moving = raw >= STANDSTILL;
+  const moving = distanceSpeed >= STANDSTILL;
   const accurate = fix.accuracy <= MAX_ACCURACY;
   const countIt = usableGap && moving && accurate;
 
@@ -89,6 +119,8 @@ export function addFix(state: TripState, fix: Fix): TripState {
     movingMs: state.movingMs + (countIt ? dt : 0),
     last: accurate || !prev ? fix : prev,
     quality,
+    recent,
+    pendingMove,
   };
 }
 
