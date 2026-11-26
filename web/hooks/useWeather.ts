@@ -5,7 +5,7 @@ import { forecastUrl, parseForecast, parsePlace, placeUrl, type Weather } from "
 import { haversineMeters } from "@/lib/speed";
 
 const CACHE_KEY = "kmh.weather";
-const STALE_MS = 15 * 60 * 1000; // refresh every 15 minutes
+const STALE_MS = 5 * 60 * 1000; // refresh every 5 minutes
 const MOVED_M = 10000; // or after driving 10 km
 
 function loadCache(): Weather | null {
@@ -83,6 +83,8 @@ export function useWeather(fix: { lat: number; lon: number } | null) {
         if (force || needsUpdate(pos.lat, pos.lon, weather)) fetchFor(pos.lat, pos.lon);
         return;
       }
+      // Nothing to do yet: don't ask the phone for a location just to learn the data is still fresh.
+      if (!force && weather && Date.now() - weather.fetchedAt <= STALE_MS) return;
       if (!("geolocation" in navigator)) {
         setError("Location isn't available in this browser");
         return;
@@ -104,6 +106,22 @@ export function useWeather(fix: { lat: number; lon: number } | null) {
     },
     [weather, needsUpdate, fetchFor],
   );
+
+  // Keep it fresh on its own: check every minute and download when the data is over 5 minutes old.
+  // Only once weather has been loaded at least once, and only while the app is on screen.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible" && (weather || lastPos.current)) refresh();
+    }, 60 * 1000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && weather) refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [weather, refresh]);
 
   return { weather, loading, error, refresh };
 }
