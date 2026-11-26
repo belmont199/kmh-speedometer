@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Speed in km/h</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#000;color:#fff;font-family:system-ui,sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+#kmh{font-size:min(44vw,55vh);font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+#unit{font-size:2rem;color:#3fcf96}
+#mph{font-size:1.5rem;color:#9aa}
+#status{color:#9aa;min-height:2.8em}
+button{font:inherit;font-size:1.4rem;font-weight:700;padding:16px 48px;border:0;border-radius:40px;background:#3fcf96;color:#00180e}
+</style>
+</head>
+<body>
+<div id="kmh">—</div>
+<div id="unit">km/h</div>
+<div id="mph"></div>
+<button id="start">Start</button>
+<p id="status" role="status">Tap Start and allow location access.</p>
+<script>
+const $ = id => document.getElementById(id);
+let watch = null, staleTimer;
+function blank() { $('kmh').textContent = '—'; $('mph').textContent = ''; }
+function onPosition(pos) {
+  clearTimeout(staleTimer);
+  const ms = pos.coords.speed; // meters per second, may be null
+  if (ms === null || !(ms >= 0)) {
+    blank();
+    $('status').textContent = 'Waiting for GPS speed. Start moving, with a clear view of the sky.';
+    return;
+  }
+  const v = ms < 0.5 ? 0 : ms; // hide GPS jitter when standing
+  $('kmh').textContent = Math.round(v * 3.6);
+  $('mph').textContent = Math.round(v * 2.236936) + ' mph';
+  $('status').textContent = 'GPS accuracy: ' + Math.round(pos.coords.accuracy) + ' m';
+  staleTimer = setTimeout(() => { blank(); $('status').textContent = 'No recent GPS signal.'; }, 10000);
+}
+function onError(err) {
+  clearTimeout(staleTimer);
+  blank();
+  if (err.code === 1) {
+    navigator.geolocation.clearWatch(watch); watch = null;
+    $('start').hidden = false;
+    $('status').textContent = 'Location is blocked. Allow it for this site in your phone settings, then tap Start.';
+  } else {
+    $('status').textContent = 'GPS signal not available yet…';
+  }
+}
+async function keepAwake() {
+  try { await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+$('start').addEventListener('click', () => {
+  if (!window.isSecureContext || !navigator.geolocation) {
+    $('status').textContent = 'GPS needs this page to be opened from an https:// address.';
+    return;
+  }
+  $('start').hidden = true;
+  $('status').textContent = 'Searching for GPS…';
+  watch = navigator.geolocation.watchPosition(onPosition, onError, { enableHighAccuracy: true, maximumAge: 0 });
+  keepAwake();
+});
+document.addEventListener('visibilitychange', () => {
+  if (watch !== null && document.visibilityState === 'visible') keepAwake();
+});
+</script>
+</body>
+</html>
