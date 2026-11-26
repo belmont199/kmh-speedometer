@@ -45,9 +45,9 @@ function onError(err) {
   if (err.code === 1) {
     navigator.geolocation.clearWatch(watch); watch = null;
     $('start').hidden = false;
-    $('status').textContent = 'Location is blocked. Allow it for this site in your phone settings, then tap Start.';
+    $('status').textContent = 'Location is blocked (code ' + err.code + ': ' + (err.message || 'no details') + '). Check Settings → Privacy & Security → Location Services → Safari Websites, then reload and tap Start.';
   } else {
-    $('status').textContent = 'GPS signal not available yet…';
+    $('status').textContent = 'GPS signal not available yet (code ' + err.code + ': ' + (err.message || 'no details') + ')…';
   }
 }
 async function keepAwake() {
